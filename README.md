@@ -1,2 +1,3 @@
-# lamviz2
+# lamviz-rust
+
 A remake of my lambda visualiser in Rust.
