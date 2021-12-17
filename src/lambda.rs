@@ -44,4 +44,112 @@ impl Term {
         }
         pretty_print_helper(self, Pos::Root)
     }
+    /**
+     * Generic lambda term traversal function
+     */
+    fn traverse<T, U>(
+        &self,
+        var: fn(&u32, T, U) -> (T, U),
+        pre_abs: fn(&Term, &str, T, U) -> (T, U),
+        post_abs: fn(&Term, &str, T, U) -> (T, U),
+        app: fn(&Term, &Term, T, U) -> (T, U),
+        init: T,
+        store: U,
+    ) -> T {
+        fn traverse_2<T, U>(
+            t: &Term,
+            acc: T,
+            store: U,
+            var: fn(&u32, T, U) -> (T, U),
+            pre_abs: fn(&Term, &str, T, U) -> (T, U),
+            post_abs: fn(&Term, &str, T, U) -> (T, U),
+            app: fn(&Term, &Term, T, U) -> (T, U),
+        ) -> (T, U) {
+            match t {
+                Term::Var(x) => var(x, acc, store),
+                Term::Abs(t, x) => {
+                    let (acc, store) = pre_abs(t, x, acc, store);
+                    let (acc, store) = traverse_2(t, acc, store, var, pre_abs, post_abs, app);
+                    post_abs(t, x, acc, store)
+                }
+                Term::App(t1, t2) => {
+                    let (acc, store) = app(t1, t2, acc, store);
+                    let (acc, store) = traverse_2(t1, acc, store, var, pre_abs, post_abs, app);
+                    traverse_2(t2, acc, store, var, pre_abs, post_abs, app)
+                }
+            }
+        }
+        traverse_2(&self, init, store, var, pre_abs, post_abs, app).0
+    }
+
+    pub fn subterms(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i + 1, 0),
+            |_, _, i, _| (i + 1, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i + 1, 0),
+            0,
+            0,
+        )
+    }
+    pub fn variables(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i + 1, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            0,
+            0,
+        )
+    }
+    pub fn abstractions(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i, 0),
+            |_, _, i, _| (i + 1, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            0,
+            0,
+        )
+    }
+    pub fn applications(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i + 1, 0),
+            0,
+            0,
+        )
+    }
+    pub fn unique_variables(&self) -> u32 {
+        self.traverse(
+            |x, i, mut s| {
+                if s.contains(&x) {
+                    (i, s)
+                } else {
+                    s.push(*x);
+                    (i + 1, s)
+                }
+            },
+            |_, _, i, s| (i, s.iter().map(|&x| x + 1).collect()),
+            |_, _, i, s| (i, s.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect()),
+            |_, _, i, s| (i, s),
+            0,
+            Vec::<u32>::new(),
+        )
+    }
+    fn free_variable_indices(&self) -> Vec<u32> {
+        self.traverse(
+            |x, mut i, _| {
+                i.push(*x);
+                (i, 0)
+            },
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect(), 0),
+            |_, _, i, _| (i, 0),
+            Vec::<u32>::new(),
+            0,
+        )
+    }
 }

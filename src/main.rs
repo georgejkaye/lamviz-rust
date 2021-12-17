@@ -15,5 +15,15 @@ fn main() {
     let t10 = lambda::Term::make_abs(t9, "z");
     let t11 = lambda::Term::make_var(0);
     let t12 = lambda::Term::make_app(t10, t11);
-    println!("{}", t12.pretty_print());
+    let t13 = lambda::Term::make_var(2);
+    let t14 = lambda::Term::make_var(1);
+    let t15 = lambda::Term::make_app(t12, t13);
+    let t16 = lambda::Term::make_app(t15, t14);
+    println!("{}", t16.pretty_print());
+
+    println!("{}", t16.subterms());
+    println!("{}", t16.variables());
+    println!("{}", t16.abstractions());
+    println!("{}", t16.applications());
+    println!("{}", t16.unique_variables());
 }
