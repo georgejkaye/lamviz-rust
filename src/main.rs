@@ -26,6 +26,9 @@ fn main() {
     println!("{}", t16.applications());
     println!("{}", t16.unique_variables());
     println!("{}", t16.crossings());
+    println!("{}", t16.beta_redexes());
+    println!("{}", t16.free_variables());
+    println!("{}", t16.bridges());
 
     let t17 = lambda::Term::make_var(0);
     let t18 = lambda::Term::make_var(1);

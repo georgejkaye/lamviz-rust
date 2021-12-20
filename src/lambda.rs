@@ -176,4 +176,40 @@ impl Term {
             }
         }
     }
+    pub fn beta_redexes(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |t1, _, i, _| {
+                if let Term::Abs(_, _) = t1 {
+                    (i + 1, 0)
+                } else {
+                    (i, 0)
+                }
+            },
+            0,
+            0,
+        )
+    }
+    pub fn free_variables(&self) -> usize {
+        self.free_variable_indices().len()
+    }
+    pub fn closed(&self) -> bool {
+        self.free_variables() == 0
+    }
+    pub fn bridges(&self) -> u32 {
+        self.traverse(
+            |_, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |_, _, i, _| (i, 0),
+            |t1, t2, i, _| {
+                let b1 = if t1.closed() { 1 } else { 0 };
+                let b2 = if t2.closed() { 1 } else { 0 };
+                (i + b1 + b2, 0)
+            },
+            0,
+            0,
+        )
+    }
 }
