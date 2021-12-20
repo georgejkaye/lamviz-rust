@@ -1,5 +1,5 @@
 pub enum Term {
-    Var(u32),
+    Var(usize),
     Abs(Box<Term>, String),
     App(Box<Term>, Box<Term>),
 }
@@ -9,24 +9,63 @@ enum Pos {
     Left,
     Right,
 }
-
 impl Term {
-    pub fn make_var(x: u32) -> Term {
+    pub fn make_var(x: usize) -> Term {
         Term::Var(x)
     }
-    pub fn make_abs(t: Term, x: &str) -> Term {
-        Term::Abs(Box::new(t), String::from(x))
+    pub fn make_abs(t: Term, lab: &str) -> Term {
+        Term::Abs(Box::new(t), lab.to_string())
     }
     pub fn make_app(t1: Term, t2: Term) -> Term {
         Term::App(Box::new(t1), Box::new(t2))
     }
-
-    pub fn pretty_print(&self) -> String {
-        fn pretty_print_helper(term: &Term, pos: Pos) -> String {
+    pub fn pretty_print(&self, ctx: Option<&Vec<String>>) -> String {
+        fn pretty_print_helper(
+            term: &Term,
+            ctx: Option<&Vec<String>>,
+            frees: &mut Vec<String>,
+            pos: Pos,
+        ) -> String {
             match term {
-                Term::Var(x) => format!("{}", x),
-                Term::Abs(t, _) => {
-                    let string = format!("λ {}", pretty_print_helper(t, Pos::Root));
+                Term::Var(x) => match ctx {
+                    None => format!("{}", x),
+                    Some(ctx) => {
+                        // Check if the variable is in the local stack
+                        let i = if x < &frees.len() {
+                            &frees[frees.len() - 1 - *x]
+                        // Otherwise it's a global variable
+                        } else {
+                            &ctx[ctx.len() - 1 - *x - frees.len()]
+                        };
+                        format!("{}", i)
+                    }
+                },
+                Term::Abs(t, x) => {
+                    // If we're printing labels, print it
+                    // Otherwise just print a lambda
+                    let lambda = match ctx {
+                        None => "λ ".to_string(),
+                        Some(_) => format!("λ{}.", x),
+                    };
+                    // If we care about context, push the current identifier
+                    match ctx {
+                        None => (),
+                        Some(_) => frees.push(x.to_string()),
+                    }
+                    // Put everything together
+                    let string = format!(
+                        "{}{}",
+                        lambda,
+                        pretty_print_helper(t, ctx, frees, Pos::Root)
+                    );
+                    // If we care about context, pop the last identifier
+                    match ctx {
+                        None => (),
+                        Some(_) => {
+                            frees.pop();
+                        }
+                    }
+                    // If this isn't the root, add brackets
                     match pos {
                         Pos::Left => format!("({})", string),
                         Pos::Right => format!("({})", string),
@@ -36,22 +75,23 @@ impl Term {
                 Term::App(t1, t2) => {
                     format!(
                         "{} {}",
-                        pretty_print_helper(t1, Pos::Left),
-                        pretty_print_helper(t2, Pos::Right)
+                        pretty_print_helper(t1, ctx, frees, Pos::Left),
+                        pretty_print_helper(t2, ctx, frees, Pos::Right)
                     )
                 }
             }
         }
-        pretty_print_helper(self, Pos::Root)
+        let mut frees = Vec::<String>::new();
+        pretty_print_helper(self, ctx, &mut frees, Pos::Root)
     }
     /**
      * Generic lambda term traversal function
      */
     fn traverse<T, U>(
         &self,
-        var: fn(&u32, T, U) -> (T, U),
-        pre_abs: fn(&Term, &str, T, U) -> (T, U),
-        post_abs: fn(&Term, &str, T, U) -> (T, U),
+        var: fn(&usize, T, U) -> (T, U),
+        pre_abs: fn(&Term, T, U) -> (T, U),
+        post_abs: fn(&Term, T, U) -> (T, U),
         app: fn(&Term, &Term, T, U) -> (T, U),
         init: T,
         store: U,
@@ -60,17 +100,17 @@ impl Term {
             t: &Term,
             acc: T,
             store: U,
-            var: fn(&u32, T, U) -> (T, U),
-            pre_abs: fn(&Term, &str, T, U) -> (T, U),
-            post_abs: fn(&Term, &str, T, U) -> (T, U),
+            var: fn(&usize, T, U) -> (T, U),
+            pre_abs: fn(&Term, T, U) -> (T, U),
+            post_abs: fn(&Term, T, U) -> (T, U),
             app: fn(&Term, &Term, T, U) -> (T, U),
         ) -> (T, U) {
             match t {
                 Term::Var(x) => var(x, acc, store),
-                Term::Abs(t, x) => {
-                    let (acc, store) = pre_abs(t, x, acc, store);
+                Term::Abs(t, _) => {
+                    let (acc, store) = pre_abs(t, acc, store);
                     let (acc, store) = traverse_2(t, acc, store, var, pre_abs, post_abs, app);
-                    post_abs(t, x, acc, store)
+                    post_abs(t, acc, store)
                 }
                 Term::App(t1, t2) => {
                     let (acc, store) = app(t1, t2, acc, store);
@@ -85,8 +125,8 @@ impl Term {
     pub fn subterms(&self) -> u32 {
         self.traverse(
             |_, i, _| (i + 1, 0),
-            |_, _, i, _| (i + 1, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i + 1, 0),
+            |_, i, _| (i, 0),
             |_, _, i, _| (i + 1, 0),
             0,
             0,
@@ -95,8 +135,8 @@ impl Term {
     pub fn variables(&self) -> u32 {
         self.traverse(
             |_, i, _| (i + 1, 0),
-            |_, _, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i, 0),
+            |_, i, _| (i, 0),
             |_, _, i, _| (i, 0),
             0,
             0,
@@ -105,8 +145,8 @@ impl Term {
     pub fn abstractions(&self) -> u32 {
         self.traverse(
             |_, i, _| (i, 0),
-            |_, _, i, _| (i + 1, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i + 1, 0),
+            |_, i, _| (i, 0),
             |_, _, i, _| (i, 0),
             0,
             0,
@@ -115,8 +155,8 @@ impl Term {
     pub fn applications(&self) -> u32 {
         self.traverse(
             |_, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i, 0),
+            |_, i, _| (i, 0),
             |_, _, i, _| (i + 1, 0),
             0,
             0,
@@ -132,28 +172,28 @@ impl Term {
                     (i + 1, s)
                 }
             },
-            |_, _, i, s| (i, s.iter().map(|&x| x + 1).collect()),
-            |_, _, i, s| (i, s.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect()),
+            |_, i, s| (i, s.iter().map(|&x| x + 1).collect()),
+            |_, i, s| (i, s.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect()),
             |_, _, i, s| (i, s),
             0,
-            Vec::<u32>::new(),
+            Vec::<usize>::new(),
         )
     }
-    fn free_variable_indices(&self) -> Vec<u32> {
+    fn free_variable_indices(&self) -> Vec<usize> {
         self.traverse(
             |x, mut i, _| {
                 i.push(*x);
                 (i, 0)
             },
+            |_, i, _| (i, 0),
+            |_, i, _| (i.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect(), 0),
             |_, _, i, _| (i, 0),
-            |_, _, i, _| (i.iter().filter(|&x| *x != 0).map(|&x| x - 1).collect(), 0),
-            |_, _, i, _| (i, 0),
-            Vec::<u32>::new(),
+            Vec::<usize>::new(),
             0,
         )
     }
     pub fn crossings(&self) -> u32 {
-        fn inter_crossings(v1: Vec<u32>, v2: Vec<u32>) -> u32 {
+        fn inter_crossings(v1: Vec<usize>, v2: Vec<usize>) -> u32 {
             let mut counter = 0;
             for i in v1.iter() {
                 for j in v2.iter() {
@@ -179,8 +219,8 @@ impl Term {
     pub fn beta_redexes(&self) -> u32 {
         self.traverse(
             |_, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i, 0),
+            |_, i, _| (i, 0),
             |t1, _, i, _| {
                 if let Term::Abs(_, _) = t1 {
                     (i + 1, 0)
@@ -201,8 +241,8 @@ impl Term {
     pub fn bridges(&self) -> u32 {
         self.traverse(
             |_, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
-            |_, _, i, _| (i, 0),
+            |_, i, _| (i, 0),
+            |_, i, _| (i, 0),
             |t1, t2, i, _| {
                 let b1 = if t1.closed() { 1 } else { 0 };
                 let b2 = if t2.closed() { 1 } else { 0 };

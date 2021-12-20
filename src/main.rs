@@ -6,7 +6,7 @@ fn main() {
     let t3 = lambda::Term::make_app(t1, t2);
     let t4 = lambda::Term::make_var(0);
     let t5 = lambda::Term::make_app(t3, t4);
-    println!("{}", t5.pretty_print());
+    println!("{}", t5.pretty_print(None));
 
     let t6 = lambda::Term::make_var(0);
     let t7 = lambda::Term::make_var(1);
@@ -19,7 +19,10 @@ fn main() {
     let t14 = lambda::Term::make_var(1);
     let t15 = lambda::Term::make_app(t12, t13);
     let t16 = lambda::Term::make_app(t15, t14);
-    println!("{}", t16.pretty_print());
+    println!("{}", t16.pretty_print(None));
+    let ctx = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+
+    println!("{}", t16.pretty_print(Some(&ctx)));
     println!("{}", t16.subterms());
     println!("{}", t16.variables());
     println!("{}", t16.abstractions());
@@ -37,6 +40,8 @@ fn main() {
     let t20 = lambda::Term::make_app(lambda::Term::make_app(t19, t18), t17);
 
     println!();
-    println!("{}", t20.pretty_print());
+    println!("{}", t20.pretty_print(None));
+    let ctx2 = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+    println!("{}", t20.pretty_print(Some(&ctx2)));
     println!("{}", t20.crossings());
 }
