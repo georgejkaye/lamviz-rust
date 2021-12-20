@@ -20,10 +20,20 @@ fn main() {
     let t15 = lambda::Term::make_app(t12, t13);
     let t16 = lambda::Term::make_app(t15, t14);
     println!("{}", t16.pretty_print());
-
     println!("{}", t16.subterms());
     println!("{}", t16.variables());
     println!("{}", t16.abstractions());
     println!("{}", t16.applications());
     println!("{}", t16.unique_variables());
+    println!("{}", t16.crossings());
+
+    let t17 = lambda::Term::make_var(0);
+    let t18 = lambda::Term::make_var(1);
+    let t19 = lambda::Term::make_var(2);
+
+    let t20 = lambda::Term::make_app(lambda::Term::make_app(t19, t18), t17);
+
+    println!();
+    println!("{}", t20.pretty_print());
+    println!("{}", t20.crossings());
 }

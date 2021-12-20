@@ -152,4 +152,28 @@ impl Term {
             0,
         )
     }
+    pub fn crossings(&self) -> u32 {
+        fn inter_crossings(v1: Vec<u32>, v2: Vec<u32>) -> u32 {
+            let mut counter = 0;
+            for i in v1.iter() {
+                for j in v2.iter() {
+                    if i < j {
+                        counter += 1;
+                    }
+                }
+            }
+            counter
+        }
+        match &self {
+            Term::Var(_) => 0,
+            Term::Abs(t, _) => t.crossings(),
+            Term::App(t1, t2) => {
+                let c1 = t1.crossings();
+                let c2 = t2.crossings();
+                let v1 = t1.free_variable_indices();
+                let v2 = t2.free_variable_indices();
+                c1 + c2 + inter_crossings(v1, v2)
+            }
+        }
+    }
 }
