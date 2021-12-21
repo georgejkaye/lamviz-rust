@@ -1,3 +1,4 @@
+mod eval;
 mod lambda;
 
 fn main() {
@@ -44,4 +45,11 @@ fn main() {
     let ctx2 = vec!["a".to_string(), "b".to_string(), "c".to_string()];
     println!("{}", t20.pretty_print(Some(&ctx2)));
     println!("{}", t20.crossings());
+
+    let t16 = match t16.normalise() {
+        Some(t) => t,
+        None => t16,
+    };
+    println!("{}", t16.pretty_print(None));
+    println!("{}", t16.pretty_print(Some(&ctx)))
 }

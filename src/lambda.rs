@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum Term {
     Var(usize),
     Abs(Box<Term>, String),
@@ -19,6 +20,13 @@ impl Term {
     pub fn make_app(t1: Term, t2: Term) -> Term {
         Term::App(Box::new(t1), Box::new(t2))
     }
+    pub fn is_abs(&self) -> bool {
+        if let Term::Abs(_, _) = self {
+            true
+        } else {
+            false
+        }
+    }
     pub fn pretty_print(&self, ctx: Option<&Vec<String>>) -> String {
         fn pretty_print_helper(
             term: &Term,
@@ -35,7 +43,7 @@ impl Term {
                             &frees[frees.len() - 1 - *x]
                         // Otherwise it's a global variable
                         } else {
-                            &ctx[ctx.len() - 1 - *x - frees.len()]
+                            &ctx[ctx.len() - 1 - (*x - frees.len())]
                         };
                         format!("{}", i)
                     }
@@ -45,7 +53,7 @@ impl Term {
                     // Otherwise just print a lambda
                     let lambda = match ctx {
                         None => "λ ".to_string(),
-                        Some(_) => format!("λ{}.", x),
+                        Some(_) => format!("λ{}. ", x),
                     };
                     // If we care about context, push the current identifier
                     match ctx {
