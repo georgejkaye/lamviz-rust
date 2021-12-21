@@ -34,11 +34,7 @@ impl Term {
     fn perform_beta_reduction(&self) -> Option<Term> {
         fn perform_beta(abs: &Term, arg: &Term) -> Option<Term> {
             if let Term::Abs(t, _) = abs {
-                println!("before shift subs {}", t.pretty_print(None));
-                println!("subbing {}", &arg.shift(1, 0).pretty_print(None));
-                let x = t.substitute(0, &arg.shift(1, 0));
-                println!("before shift {}", x.pretty_print(None));
-                Some(x.shift(-1, 0))
+                Some(t.substitute(0, &arg.shift(1, 0)).shift(-1, 0))
             } else {
                 None
             }
@@ -75,7 +71,15 @@ impl Term {
                                     let (t2n, op) = normalise_1(t2, op);
                                     match t2n {
                                         None => (None, op),
-                                        Some(t2n) => (Some(Term::make_app(t1n, t2n)), op),
+                                        Some(t2n) => {
+                                            let cont = t1n.is_abs();
+                                            let t = Term::make_app(t1n, t2n);
+                                            if cont {
+                                                normalise_1(&t, op)
+                                            } else {
+                                                (Some(t), op)
+                                            }
+                                        }
                                     }
                                 }
                             }

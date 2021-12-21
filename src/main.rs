@@ -46,10 +46,10 @@ fn main() {
     println!("{}", t20.pretty_print(Some(&ctx2)));
     println!("{}", t20.crossings());
 
+    println!("About to normalise {}", t16.pretty_print(Some(&ctx)));
     let t16 = match t16.normalise() {
         Some(t) => t,
         None => t16,
     };
-    println!("{}", t16.pretty_print(None));
-    println!("{}", t16.pretty_print(Some(&ctx)))
+    println!("After normalisation {}", t16.pretty_print(Some(&ctx)))
 }
