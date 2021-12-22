@@ -1,5 +1,8 @@
 mod eval;
 mod lambda;
+mod parse;
+
+use std::io;
 
 fn main() {
     let t1 = lambda::Term::make_abs(lambda::Term::make_var(0), "x");
@@ -67,5 +70,10 @@ fn main() {
         Some(t) => t,
         None => t16,
     };
-    println!("After normalisation {}", t16.pretty_print(Some(&ctx)))
+    println!("After normalisation {}", t16.pretty_print(Some(&ctx)));
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
 }
