@@ -46,6 +46,22 @@ fn main() {
     println!("{}", t20.pretty_print(Some(&ctx2)));
     println!("{}", t20.crossings());
 
+    let t16a = t16.clone();
+    println!(
+        "About to do outermost normo {}",
+        t16a.pretty_print(Some(&ctx))
+    );
+    let t16a = match t16a.outermost_reduction() {
+        Some(t) => t,
+        None => t16a,
+    };
+    println!("After outermost normo {}", t16a.pretty_print(Some(&ctx)));
+    let t16a = match t16a.outermost_reduction() {
+        Some(t) => t,
+        None => t16a,
+    };
+    println!("After outermost normo {}", t16a.pretty_print(Some(&ctx)));
+
     println!("About to normalise {}", t16.pretty_print(Some(&ctx)));
     let t16 = match t16.normalise() {
         Some(t) => t,

@@ -90,4 +90,69 @@ impl Term {
         }
         normalise_1(self, 0).0
     }
+    pub fn outermost_reduction(&self) -> Option<Term> {
+        match self {
+            Term::Var(_) => None,
+            Term::Abs(t, x) => match t.outermost_reduction() {
+                None => None,
+                Some(t) => Some(Term::make_abs(t, x)),
+            },
+            Term::App(t1, t2) => match self.perform_beta_reduction() {
+                Some(t) => Some(t),
+                None => match t1.outermost_reduction() {
+                    Some(t1) => Some(Term::remake_app_lhs(t1, t2)),
+                    None => match t2.outermost_reduction() {
+                        Some(t2) => Some(Term::remake_app_rhs(t1, t2)),
+                        None => None,
+                    },
+                },
+            },
+        }
+    }
+    pub fn innermost_reduction(&self) -> Option<Term> {
+        match self {
+            Term::Var(_) => None,
+            Term::Abs(t, x) => match t.innermost_reduction() {
+                Some(t) => Some(Term::make_abs(t, x)),
+                None => None,
+            },
+            Term::App(t1, t2) => match t1.innermost_reduction() {
+                Some(t1) => Some(Term::remake_app_lhs(t1, t2)),
+                None => match t2.innermost_reduction() {
+                    Some(t2) => Some(Term::remake_app_rhs(t1, t2)),
+                    None => self.perform_beta_reduction(),
+                },
+            },
+        }
+    }
+    pub fn specific_reduction(&self, i: usize) -> Option<Term> {
+        fn specific_reduction_1(t: &Term, i: usize) -> (Option<Term>, usize) {
+            match t {
+                Term::Var(_) => (None, i),
+                Term::Abs(t, x) => match specific_reduction_1(t, i) {
+                    (Some(t), i) => (Some(Term::make_abs(t, x)), i),
+                    (None, i) => (None, i),
+                },
+                Term::App(t1, t2) => {
+                    if t.is_beta_redex() && i == 0 {
+                        (t.perform_beta_reduction(), 0)
+                    } else {
+                        let i = if t.is_beta_redex() {
+                            (i as i32 - 1) as usize
+                        } else {
+                            i
+                        };
+                        match specific_reduction_1(t1, i) {
+                            (Some(t1), i) => (Some(Term::remake_app_lhs(t1, t2)), i),
+                            (None, i) => match specific_reduction_1(t2, i) {
+                                (Some(t2), i) => (Some(Term::remake_app_rhs(t1, t2)), i),
+                                (None, i) => (None, i),
+                            },
+                        }
+                    }
+                }
+            }
+        }
+        specific_reduction_1(self, i).0
+    }
 }

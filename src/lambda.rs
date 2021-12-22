@@ -20,6 +20,12 @@ impl Term {
     pub fn make_app(t1: Term, t2: Term) -> Term {
         Term::App(Box::new(t1), Box::new(t2))
     }
+    pub fn remake_app_lhs(t1: Term, t2: &Box<Term>) -> Term {
+        Term::App(Box::new(t1), t2.clone())
+    }
+    pub fn remake_app_rhs(t1: &Box<Term>, t2: Term) -> Term {
+        Term::App(t1.clone(), Box::new(t2))
+    }
     pub fn is_abs(&self) -> bool {
         if let Term::Abs(_, _) = self {
             true
@@ -239,6 +245,13 @@ impl Term {
             0,
             0,
         )
+    }
+    pub fn is_beta_redex(&self) -> bool {
+        if let Term::App(t1, t2) = self {
+            t1.is_abs()
+        } else {
+            false
+        }
     }
     pub fn free_variables(&self) -> usize {
         self.free_variable_indices().len()
