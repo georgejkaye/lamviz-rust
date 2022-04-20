@@ -37,18 +37,13 @@ fn descending_list(x: usize, y: usize) -> Vec<usize> {
 
 pub fn generate_planar_terms(n: usize, k: usize) -> Vec<Term> {
     fn generate_planar_terms_1(n: usize, ks: &mut Vec<usize>) -> Vec<Term> {
-        // println!("{} {:?}", n, ks);
         match n {
             0 => vec![],
             1 => match ks[..] {
-                [k] => {
-                    vec![Term::Var(k)]
-                }
+                [k] => vec![Term::Var(k)]
                 // If there are multiple free variables, there are no linear terms
                 // of size 1 as each variable must be used exactly once
-                _ => {
-                    vec![]
-                }
+                _ => vec![]
             },
             n => {
                 let mut terms = vec![];
@@ -64,11 +59,10 @@ pub fn generate_planar_terms(n: usize, k: usize) -> Vec<Term> {
                 ks.iter_mut().for_each(|k| *k -= 1);
                 // We split the subterms between each side of the application
                 for i in 1..(n - 1) {
-                    println!("{} {}", i, n - 1 - i);
                     // We also split up the context into two halves, preserving their order
-                    for j in 0..ks.len() {
-                        let lhs = generate_planar_terms_1(i, &mut ks[..j + 1].to_vec());
-                        let rhs = generate_planar_terms_1(n - 1 - i, &mut ks[j + 1..].to_vec());
+                    for j in 0..(ks.len() + 1) {
+                        let lhs = generate_planar_terms_1(i, &mut ks[..j].to_vec());
+                        let rhs = generate_planar_terms_1(n - 1 - i, &mut ks[j..].to_vec());
                         for t1 in &lhs {
                             for t2 in &rhs {
                                 terms.push(app(t1.clone(), t2.clone()));
