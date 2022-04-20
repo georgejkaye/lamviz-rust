@@ -1,8 +1,8 @@
 mod generate;
 
 fn main() {
-    let terms = generate::generate_pure_terms(4, 0);
+    let terms = generate::generate_planar_terms(5, 0);
     for t in terms {
-        println!("{0}", t);
+        println!("{}", t);
     }
 }
