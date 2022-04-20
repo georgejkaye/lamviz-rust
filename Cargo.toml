@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 lambda_calculus = "3.0.2"
+itertools = "0.10.3"
