@@ -82,9 +82,7 @@ pub fn generate_terms(n: usize, k: usize, fragment: Fragment) -> Vec<Term> {
 
                     for (mut lhs_context, mut rhs_context) in contexts {
                         let lhs = generate_terms_helper(i, &mut lhs_context, fragment);
-                        println!("{:?}", lhs);
                         let rhs = generate_terms_helper(n - 1 - i, &mut rhs_context, fragment);
-                        println!("{:?}", rhs);
                         for t1 in &lhs {
                             for t2 in &rhs {
                                 terms.push(app(t1.clone(), t2.clone()));
